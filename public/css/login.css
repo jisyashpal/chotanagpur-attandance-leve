@@ -1,0 +1,224 @@
+:root {
+    --primary-color: #c02236;
+    --gradient-start: #950303e3;
+    --gradient-end: #031295e3;
+    --main-gradient: linear-gradient(132deg, var(--gradient-start), var(--gradient-end));
+    --main-gradient-hover: linear-gradient(132deg, var(--gradient-end), var(--gradient-start));
+    --focus-shadow: rgba(192, 34, 54, 0.1);
+    --btn-shadow: rgba(192, 34, 54, 0.2);
+    --btn-shadow-hover: rgba(192, 34, 54, 0.3);
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #fcedf0 0%, #f9d8de 100%);
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 1000px;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    margin: 2rem;
+}
+
+.login-image-section {
+    flex: 1 1 25%;
+    background: var(--main-gradient);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-image-section::after {
+    content: '';
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(201,149,27,0.15) 0%, rgba(201,149,27,0) 70%);
+    top: -50px;
+    right: -100px;
+    border-radius: 50%;
+}
+
+.login-image-section::before {
+    content: '';
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%);
+    bottom: -150px;
+    left: -150px;
+    border-radius: 50%;
+}
+
+.login-form-section {
+    flex: 1 1 50%;
+    padding: 4rem 3rem;
+    background: #ffffff;
+    position: relative;
+}
+
+.form-control {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #a91f3136;
+    box-shadow:0 0 10px 3px var(--focus-shadow);
+    background-color: #ffffff;
+}
+
+.input-group-text {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-right: none;
+    color: var(--primary-color);
+    border-radius: 12px 0 0 12px;
+}
+
+.form-control.with-icon {
+    border-left: none;
+}
+
+.btn-outline-secondary {
+    border: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    color: #64748b;
+    border-radius: 0 12px 12px 0;
+    border-left: none;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #e2e8f0;
+    color: #334155;
+}
+
+.btn-login {
+    background: var(--main-gradient);
+    color: white;
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--btn-shadow);
+}
+
+.btn-login:hover {
+    background: var(--main-gradient-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px var(--btn-shadow-hover);
+    color: white;
+}
+
+.brand-logo {
+    width: 90px;
+    height: 90px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    position: relative;
+    z-index: 1;
+}
+
+.brand-logo i {
+    color: var(--primary-color);
+    font-size: 2.8rem;
+}
+
+.college-name {
+    font-weight: 800;
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    letter-spacing: 1px;
+    position: relative;
+    z-index: 1;
+}
+
+.college-sub {
+    color: rgba(255, 255, 255, 0.85);
+    text-align: center;
+    font-size: 15px;
+    font-weight: 300;
+    position: relative;
+    z-index: 1;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #334155;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-check-label {
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 991px) {
+    .login-image-section {
+        padding: 3rem 2rem;
+    }
+    
+    .college-name {
+        font-size: 1.6rem;
+    }
+    
+    .login-form-section {
+        padding: 3rem 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .login-image-section {
+        display: none;
+    }
+    
+    .login-container {
+        margin: 1rem;
+        border-radius: 16px;
+    }
+    
+    .login-form-section {
+        padding: 2.5rem 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-container {
+        margin: 0;
+        border-radius: 0;
+    }
+    
+    .login-form-section {
+        padding: 2rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+}
