@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StudentAttendance extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'student_id', 'subject_id', 'batch_id', 'session_id', 'course_id',
         'semester_id', 'section_id', 'date', 'status', 'marked_by'

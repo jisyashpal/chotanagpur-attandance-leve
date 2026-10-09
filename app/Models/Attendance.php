@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class Attendance extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'user_id', 'location_id', 'date', 'check_in', 'check_out', 
         'latitude', 'longitude', 'status'

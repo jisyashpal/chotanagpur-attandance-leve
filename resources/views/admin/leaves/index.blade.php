@@ -9,32 +9,64 @@
 @endsection
 
 @section('content')
+@php
+    $listLabels = [
+        'students' => 'Students',
+        'faculty' => 'Faculty',
+        'staff' => 'Staff',
+    ];
+    $listLabel = $listLabels[$tab] ?? 'Students';
+@endphp
 <div class="container-fluid">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-0 p-0">
+            <ul class="nav nav-tabs nav-fill" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link py-3 fw-bold {{ $tab === 'students' ? 'active text-primary' : 'text-muted' }}"
+                        href="{{ route('admin.leaves.index', ['tab' => 'students']) }}">
+                        <i class="fas fa-user-graduate me-2"></i>Students
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link py-3 fw-bold {{ $tab === 'faculty' ? 'active text-primary' : 'text-muted' }}"
+                        href="{{ route('admin.leaves.index', ['tab' => 'faculty']) }}">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>Faculty
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link py-3 fw-bold {{ $tab === 'staff' ? 'active text-primary' : 'text-muted' }}"
+                        href="{{ route('admin.leaves.index', ['tab' => 'staff']) }}">
+                        <i class="fas fa-user-tie me-2"></i>Staff
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
     <form action="{{ route('admin.leaves.index') }}" method="GET" class="mb-4">
+        <input type="hidden" name="tab" value="{{ $tab }}">
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white py-3">
-                <h5 class="card-title mb-0 fw-bold">Filter Leaves</h5>
+                <h5 class="card-title mb-0 fw-bold">Filter {{ $listLabel }} Leaves</h5>
             </div>
             <div class="card-body">
                 <div class="filter-card-grid">
-                    <div>
-                        <label class="form-label small text-muted fw-bold">Role</label>
-                        <select name="role" class="form-select form-select-sm">
-                            <option value="">All Roles</option>
-                            <option value="student" {{ request('role') === 'student' ? 'selected' : '' }}>Student</option>
-                            <option value="faculty" {{ request('role') === 'faculty' ? 'selected' : '' }}>Faculty</option>
-                            <option value="staff" {{ request('role') === 'staff' ? 'selected' : '' }}>Staff</option>
-                        </select>
+                    <div class="search-col">
+                        <label class="form-label small text-muted fw-bold">Search {{ $listLabel }}</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white border-end-0 text-muted">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" name="search" id="person_search" class="form-control border-start-0"
+                                placeholder="{{ $tab === 'students' ? 'Search by name, email or roll no' : 'Search by name, email or employee ID' }}"
+                                value="{{ request('search') }}"
+                                autocomplete="off">
+                        </div>
                     </div>
                     <div>
-                        <label class="form-label small text-muted fw-bold">User</label>
-                        <select name="user_id" class="form-select form-select-sm">
-                            <option value="">All Users</option>
-                            @foreach($users as $user)
-                                <option value="{{ $user->id }}" {{ (string) request('user_id') === (string) $user->id ? 'selected' : '' }}>
-                                    {{ $user->name }} ({{ ucfirst($user->role) }})
-                                </option>
-                            @endforeach
+                        <label class="form-label small text-muted fw-bold">Select {{ $listLabel }}</label>
+                        <select name="user_id" id="person_select" class="form-select form-select-sm">
+                            <option value="">All {{ $listLabel }}</option>
                         </select>
                     </div>
                     <div>
@@ -54,6 +86,7 @@
                         <label class="form-label small text-muted fw-bold">To Date</label>
                         <input type="date" name="to_date" class="form-control form-control-sm" value="{{ request('to_date') }}">
                     </div>
+                    @if($tab === 'students')
                     <div>
                         <label class="form-label small text-muted fw-bold">Course</label>
                         <select name="course_id" id="filter_course_id" class="form-select form-select-sm">
@@ -120,11 +153,12 @@
                             @endforeach
                         </select>
                     </div>
+                    @endif
                     <div class="actions-col">
                         <button type="submit" class="btn btn-sm btn-primary w-100 shadow-sm">
                             <i class="fas fa-filter"></i> Filter
                         </button>
-                        <a href="{{ route('admin.leaves.index') }}" class="btn btn-sm btn-light border w-100">
+                        <a href="{{ route('admin.leaves.index', ['tab' => $tab]) }}" class="btn btn-sm btn-light border w-100">
                             Reset
                         </a>
                     </div>
@@ -137,7 +171,7 @@
 
     <div class="card shadow-sm border-0">
         <div class="card-header bg-white py-3">
-            <h5 class="card-title mb-0 fw-bold">Leave Requests</h5>
+            <h5 class="card-title mb-0 fw-bold">{{ $listLabel }} Leave Requests</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -162,16 +196,41 @@
                                     <div class="fw-bold">{{ $leave->user->name ?? 'N/A' }}</div>
                                     <small class="text-muted">{{ $leave->user->email ?? '' }}</small>
                                 </td>
-                                <td>{{ ucfirst($leave->user->role ?? '-') }}</td>
+                                <td>
+                                    @php
+                                        $roleLabel = match ($leave->user->role ?? '') {
+                                            'faculty' => 'Faculty',
+                                            'staff' => 'Staff',
+                                            'student' => 'Student',
+                                            default => '-',
+                                        };
+                                    @endphp
+                                    {{ $roleLabel }}
+                                </td>
                                 <td>
                                     {{ \Carbon\Carbon::parse($leave->from_date)->format('d M, Y') }}
                                     <span class="text-muted">to</span>
                                     {{ \Carbon\Carbon::parse($leave->to_date)->format('d M, Y') }}
                                 </td>
-                                <td style="max-width: 250px;">
-                                    <span class="d-inline-block text-truncate" style="max-width: 250px;" title="{{ $leave->reason }}">
-                                        {{ $leave->reason }}
-                                    </span>
+                                <td style="max-width: 280px;">
+                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                        <span class="d-inline-block text-truncate" style="max-width: 160px;">
+                                            {{ $leave->reason }}
+                                        </span>
+                                        <button type="button"
+                                            class="btn btn-sm btn-primary flex-shrink-0"
+                                            onclick="openLeaveReasonModal({{ \Illuminate\Support\Js::from([
+                                                'name' => $leave->user->name ?? 'N/A',
+                                                'email' => $leave->user->email ?? '',
+                                                'role' => $roleLabel,
+                                                'dates' => \Carbon\Carbon::parse($leave->from_date)->format('d M, Y').' to '.\Carbon\Carbon::parse($leave->to_date)->format('d M, Y'),
+                                                'status' => ucfirst($leave->status),
+                                                'reason' => $leave->reason,
+                                                'remarks' => $leave->admin_remarks,
+                                            ]) }})">
+                                            <i class="fas fa-eye me-1"></i> View
+                                        </button>
+                                    </div>
                                     @if($leave->admin_remarks)
                                         <div class="small text-muted mt-1" style="font-size: 0.8rem; border-top: 1px dashed #dee2e6; padding-top: 4px;">
                                             <strong class="text-secondary"><i class="fas fa-comment-alt me-1"></i>Admin Note:</strong> {{ $leave->admin_remarks }}
@@ -205,7 +264,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4 text-muted">No leave requests found.</td>
+                                <td colspan="8" class="text-center py-4 text-muted">No {{ strtolower($listLabel) }} leave requests found.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -217,6 +276,47 @@
                 {{ $leaves->links() }}
             </div>
         @endif
+    </div>
+</div>
+
+<!-- Leave Reason Modal -->
+<div class="modal fade" id="leaveReasonModal" tabindex="-1" aria-labelledby="leaveReasonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="leaveReasonModalLabel">Leave Reason</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <div class="fw-bold" id="reasonViewName"></div>
+                    <div class="small text-muted" id="reasonViewEmail"></div>
+                </div>
+                <div class="row g-2 mb-3 small">
+                    <div class="col-6">
+                        <div class="text-muted">List</div>
+                        <div class="fw-semibold" id="reasonViewRole"></div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted">Status</div>
+                        <div class="fw-semibold" id="reasonViewStatus"></div>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-muted">Leave Dates</div>
+                        <div class="fw-semibold" id="reasonViewDates"></div>
+                    </div>
+                </div>
+                <label class="form-label fw-bold mb-1">Reason</label>
+                <div id="reasonViewBody" class="border rounded p-3 bg-light" style="white-space: pre-wrap;"></div>
+                <div id="reasonViewRemarksWrap" class="d-none mt-3">
+                    <label class="form-label fw-bold mb-1">Admin Note</label>
+                    <div id="reasonViewRemarks" class="border rounded p-3" style="white-space: pre-wrap;"></div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-light border px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -252,6 +352,89 @@
 
 @push('scripts')
 <script>
+    function openLeaveReasonModal(payload) {
+        document.getElementById('reasonViewName').textContent = payload.name || 'N/A';
+        document.getElementById('reasonViewEmail').textContent = payload.email || '';
+        document.getElementById('reasonViewRole').textContent = payload.role || '-';
+        document.getElementById('reasonViewStatus').textContent = payload.status || '-';
+        document.getElementById('reasonViewDates').textContent = payload.dates || '-';
+        document.getElementById('reasonViewBody').textContent = payload.reason || 'No reason provided.';
+
+        const remarksWrap = document.getElementById('reasonViewRemarksWrap');
+        const remarks = document.getElementById('reasonViewRemarks');
+        if (payload.remarks) {
+            remarks.textContent = payload.remarks;
+            remarksWrap.classList.remove('d-none');
+        } else {
+            remarks.textContent = '';
+            remarksWrap.classList.add('d-none');
+        }
+
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('leaveReasonModal'));
+        modal.show();
+    }
+
+    (function () {
+        const people = @json($people);
+        const searchInput = document.getElementById('person_search');
+        const select = document.getElementById('person_select');
+        if (!searchInput || !select) return;
+
+        let chosenId = @json((string) request('user_id'));
+        const allLabel = @json('All '.$listLabel);
+
+        function label(person) {
+            if (person.meta) return person.name + ' — ' + person.meta;
+            if (person.email) return person.name + ' — ' + person.email;
+            return person.name;
+        }
+
+        function renderOptions() {
+            const query = searchInput.value.trim().toLowerCase();
+            const chosen = chosenId;
+            let list = people.filter(function (person) {
+                if (!query) return true;
+                const haystack = (person.name + ' ' + (person.email || '') + ' ' + (person.meta || '')).toLowerCase();
+                return haystack.indexOf(query) !== -1;
+            });
+
+            if (chosen) {
+                const picked = people.find(function (person) { return String(person.id) === String(chosen); });
+                if (picked && !list.some(function (person) { return person.id === picked.id; })) {
+                    list = [picked].concat(list);
+                }
+            }
+
+            select.innerHTML = '';
+            const allOption = document.createElement('option');
+            allOption.value = '';
+            allOption.textContent = allLabel;
+            select.appendChild(allOption);
+
+            list.forEach(function (person) {
+                const option = document.createElement('option');
+                option.value = person.id;
+                option.textContent = label(person);
+                select.appendChild(option);
+            });
+
+            if (chosen && list.some(function (person) { return String(person.id) === String(chosen); })) {
+                select.value = chosen;
+            }
+        }
+
+        searchInput.addEventListener('input', function () {
+            chosenId = '';
+            renderOptions();
+        });
+
+        select.addEventListener('change', function () {
+            chosenId = select.value;
+        });
+
+        renderOptions();
+    })();
+
     function openLeaveStatusModal(leaveId, status) {
         const modal = document.getElementById('leaveStatusModal');
         const form = document.getElementById('leaveStatusForm');

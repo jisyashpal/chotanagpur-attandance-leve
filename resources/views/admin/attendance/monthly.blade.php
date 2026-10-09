@@ -290,8 +290,8 @@
                             <div>
                                 <i class="fas fa-info-circle me-2"></i>Showing monthly report for filtered student: <strong>{{ $selectedStudent->name }}</strong>
                             </div>
-                            <a href="{{ route('admin.attendance.monthly', ['tab' => 'students', 'month' => $monthParam, 'course_id' => request('course_id'), 'batch_id' => request('batch_id'), 'semester_id' => request('semester_id'), 'session_id' => request('session_id'), 'section_id' => request('section_id'), 'subject_id' => request('subject_id')]) }}" class="btn btn-sm btn-link text-decoration-none">
-                                <i class="fas fa-times-circle"></i> Clear Student Filter
+                            <a href="{{ route('admin.attendance.monthly', ['tab' => 'students', 'month' => $monthParam, 'course_id' => request('course_id'), 'batch_id' => request('batch_id'), 'semester_id' => request('semester_id'), 'session_id' => request('session_id'), 'section_id' => request('section_id'), 'subject_id' => request('subject_id')]) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-table me-1"></i> View Full Batch
                             </a>
                         </div>
                     @endif
@@ -366,10 +366,19 @@
                             </div>
                         @else
                             <!-- Aggregated Summary View (No subject selected) -->
-                            <div class="mb-3">
+                            @php
+                                $batchSemester = request('semester_id') ? $semesters->find(request('semester_id')) : null;
+                                $batchSubject = $batchSemester ? $batchSemester->subjects->first() : null;
+                            @endphp
+                            <div class="mb-3 d-flex justify-content-between align-items-center gap-2">
                                 <h6 class="fw-bold mb-0 text-secondary">
                                     Overall Monthly Attendance Summary (All Subjects)
                                 </h6>
+                                @if($batchSubject)
+                                    <a href="{{ route('admin.attendance.monthly', ['tab' => 'students', 'month' => $monthParam, 'course_id' => request('course_id'), 'batch_id' => request('batch_id'), 'semester_id' => request('semester_id'), 'session_id' => request('session_id'), 'section_id' => request('section_id'), 'subject_id' => $batchSubject->id]) }}" class="btn btn-sm btn-primary shadow-sm">
+                                        <i class="fas fa-table me-1"></i> View Batch Matrix
+                                    </a>
+                                @endif
                             </div>
 
                             <div class="table-responsive shadow-sm rounded border">
@@ -420,7 +429,7 @@
                                                             $firstSubject = $semester ? $semester->subjects->first() : null;
                                                         @endphp
                                                         @if($firstSubject)
-                                                            <a href="{{ route('admin.attendance.monthly', ['tab' => 'students', 'month' => $monthParam, 'course_id' => request('course_id'), 'batch_id' => request('batch_id'), 'semester_id' => request('semester_id'), 'session_id' => request('session_id'), 'section_id' => request('section_id'), 'subject_id' => $firstSubject->id]) }}" class="btn btn-sm btn-outline-primary py-1">
+                                                            <a href="{{ route('admin.attendance.monthly', ['tab' => 'students', 'month' => $monthParam, 'course_id' => request('course_id'), 'batch_id' => request('batch_id'), 'semester_id' => request('semester_id'), 'session_id' => request('session_id'), 'section_id' => request('section_id'), 'subject_id' => $firstSubject->id, 'student_id' => $student->id]) }}" class="btn btn-sm btn-outline-primary py-1">
                                                                 View Matrix
                                                             </a>
                                                         @endif

@@ -13,7 +13,13 @@ body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    background: linear-gradient(135deg, #fcedf0 0%, #f9d8de 100%);
+    background-image:
+        linear-gradient(135deg, rgb(252 237 240 / 39%) 0%, rgb(249 216 222 / 58%) 100%),
+        url('../images/college.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     font-family: 'Inter', sans-serif;
     display: flex;
     align-items: center;
@@ -50,7 +56,7 @@ body {
     position: absolute;
     width: 300px;
     height: 300px;
-    background: radial-gradient(circle, rgba(201,149,27,0.15) 0%, rgba(201,149,27,0) 70%);
+    background: radial-gradient(circle, rgba(201, 149, 27, 0.15) 0%, rgba(201, 149, 27, 0) 70%);
     top: -50px;
     right: -100px;
     border-radius: 50%;
@@ -61,7 +67,7 @@ body {
     position: absolute;
     width: 400px;
     height: 400px;
-    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 70%);
     bottom: -150px;
     left: -150px;
     border-radius: 50%;
@@ -83,7 +89,7 @@ body {
 
 .form-control:focus {
     border-color: #a91f3136;
-    box-shadow:0 0 10px 3px var(--focus-shadow);
+    box-shadow: 0 0 10px 3px var(--focus-shadow);
     background-color: #ffffff;
 }
 
@@ -139,7 +145,7 @@ body {
     align-items: center;
     justify-content: center;
     margin-bottom: 2rem;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     position: relative;
     z-index: 1;
 }
@@ -184,11 +190,11 @@ body {
     .login-image-section {
         padding: 3rem 2rem;
     }
-    
+
     .college-name {
         font-size: 1.6rem;
     }
-    
+
     .login-form-section {
         padding: 3rem 2rem;
     }
@@ -198,12 +204,12 @@ body {
     .login-image-section {
         display: none;
     }
-    
+
     .login-container {
         margin: 1rem;
         border-radius: 16px;
     }
-    
+
     .login-form-section {
         padding: 2.5rem 1.5rem;
     }
@@ -214,7 +220,7 @@ body {
         margin: 0;
         border-radius: 0;
     }
-    
+
     .login-form-section {
         padding: 2rem 1.25rem;
         display: flex;
