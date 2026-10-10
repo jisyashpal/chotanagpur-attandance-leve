@@ -13,6 +13,7 @@ use App\Models\StudentProfile;
 use App\Models\FacultyProfile;
 use App\Models\StaffProfile;
 use App\Models\ActivityLog;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -699,6 +700,40 @@ class UserManagementController extends Controller
             ->paginate(15);
 
         return view('admin.users.logins', compact('sessions'));
+    }
+
+    /**
+     * Block or unblock a student, staff, or faculty account.
+     */
+    public function toggleActive($id)
+    {
+        $user = User::findOrFail($id);
+
+        if (! in_array($user->role, ['student', 'faculty', 'staff'], true)) {
+            return back()->with('error', 'Admin accounts cannot be blocked.');
+        }
+
+        $wasActive = (bool) $user->is_active;
+        $user->is_active = ! $wasActive;
+        $user->save();
+
+        if (! $user->is_active) {
+            $user->tokens()->delete();
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+        }
+
+        AuditLogger::log(
+            $user->is_active ? 'unblock' : 'block',
+            $user,
+            ['is_active' => $wasActive],
+            ['is_active' => (bool) $user->is_active],
+            $user->is_active ? 'User unblocked' : 'User blocked'
+        );
+
+        return back()->with(
+            'success',
+            $user->is_active ? 'User unblocked successfully.' : 'User blocked successfully.'
+        );
     }
 
     /**

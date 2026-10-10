@@ -182,6 +182,13 @@ class AuthController extends Controller
             ]);
         }
 
+        if (! $user->is_active) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Your account has been blocked.',
+            ], 403);
+        }
+
         // Register/Update Device
         $user->devices()->updateOrCreate(
             ['device_id' => $request->device_id],
@@ -247,6 +254,13 @@ class AuthController extends Controller
             throw ValidationException::withMessages([
                 'roll_no' => ['The provided student credentials do not match our records.'],
             ]);
+        }
+
+        if (! $user->is_active) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Your account has been blocked.',
+            ], 403);
         }
 
         // Register/Update Device

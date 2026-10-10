@@ -77,12 +77,6 @@
         font-weight: 700;
     }
     
-    .cell-late {
-        background-color: #fff3cd !important;
-        color: #664d03 !important;
-        font-weight: 700;
-    }
-    
     .cell-absent {
         background-color: #f8d7da !important;
         color: #842029 !important;
@@ -317,6 +311,7 @@
                                             @endfor
                                             <th class="bg-success text-white border-top">P</th>
                                             <th class="bg-danger text-white border-top">A</th>
+                                            <th class="bg-info text-white border-top">LV</th>
                                             <th class="bg-dark text-white border-top">%</th>
                                         </tr>
                                     </thead>
@@ -350,15 +345,16 @@
                                                     @endif
                                                 @endfor
                                                 @php
-                                                    $summary = $studentAttendanceSummary[$student->id] ?? ['present' => 0, 'absent' => 0, 'percentage' => 0];
+                                                    $summary = $studentAttendanceSummary[$student->id] ?? ['present' => 0, 'absent' => 0, 'leave' => 0, 'percentage' => 0];
                                                 @endphp
                                                 <td class="bg-success-subtle fw-bold text-success">{{ $summary['present'] }}</td>
                                                 <td class="bg-danger-subtle fw-bold text-danger">{{ $summary['absent'] }}</td>
+                                                <td class="bg-info-subtle fw-bold text-info-emphasis">{{ $summary['leave'] }}</td>
                                                 <td class="bg-dark-subtle fw-bold">{{ $summary['percentage'] }}%</td>
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="{{ $daysInMonth + 5 }}" class="text-center py-4 text-muted">No students found.</td>
+                                                <td colspan="{{ $daysInMonth + 6 }}" class="text-center py-4 text-muted">No students found.</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -390,6 +386,7 @@
                                             <th>Total Classes</th>
                                             <th>Attended</th>
                                             <th>Absent</th>
+                                            <th>Leave</th>
                                             <th>Attendance %</th>
                                             <th class="pe-4 text-end">Action</th>
                                         </tr>
@@ -397,7 +394,7 @@
                                     <tbody>
                                         @forelse($students as $student)
                                             @php
-                                                $summary = $studentAttendanceSummary[$student->id] ?? ['present' => 0, 'absent' => 0, 'total' => 0, 'percentage' => 0];
+                                                $summary = $studentAttendanceSummary[$student->id] ?? ['present' => 0, 'absent' => 0, 'leave' => 0, 'total' => 0, 'percentage' => 0];
                                             @endphp
                                             <tr>
                                                 <td class="ps-4">
@@ -412,6 +409,7 @@
                                                 <td>{{ $summary['total'] }}</td>
                                                 <td class="text-success fw-bold">{{ $summary['present'] }}</td>
                                                 <td class="text-danger fw-bold">{{ $summary['absent'] }}</td>
+                                                <td class="text-info fw-bold">{{ $summary['leave'] }}</td>
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <span class="fw-bold me-2">{{ $summary['percentage'] }}%</span>
@@ -438,7 +436,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="7" class="text-center py-4 text-muted">No students found.</td>
+                                                <td colspan="8" class="text-center py-4 text-muted">No students found.</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -538,7 +536,6 @@
                                         <th>{{ sprintf('%02d', $d) }}</th>
                                     @endfor
                                     <th class="bg-success text-white border-top">P</th>
-                                    <th class="bg-warning text-dark border-top">L</th>
                                     <th class="bg-danger text-white border-top">A</th>
                                     <th class="bg-info text-white border-top">LV</th>
                                     <th class="bg-dark text-white border-top">%</th>
@@ -563,8 +560,6 @@
                                             @endphp
                                             @if($status === 'present')
                                                 <td class="cell-present" title="{{ $detail ?: 'Present' }}">P</td>
-                                            @elseif($status === 'late')
-                                                <td class="cell-late" title="{{ $detail ?: 'Late' }}">L</td>
                                             @elseif($status === 'absent')
                                                 <td class="cell-absent" title="Absent">A</td>
                                             @elseif($status === 'holiday')
@@ -578,17 +573,16 @@
                                             @endif
                                         @endfor
                                         @php
-                                            $summary = $staffAttendanceSummary[$staff->id] ?? ['present' => 0, 'late' => 0, 'absent' => 0, 'leave' => 0, 'percentage' => 0];
+                                            $summary = $staffAttendanceSummary[$staff->id] ?? ['present' => 0, 'absent' => 0, 'leave' => 0, 'percentage' => 0];
                                         @endphp
                                         <td class="bg-success-subtle fw-bold text-success">{{ $summary['present'] }}</td>
-                                        <td class="bg-warning-subtle fw-bold text-warning-emphasis">{{ $summary['late'] }}</td>
                                         <td class="bg-danger-subtle fw-bold text-danger">{{ $summary['absent'] }}</td>
                                         <td class="bg-info-subtle fw-bold text-info-emphasis">{{ $summary['leave'] }}</td>
                                         <td class="bg-dark-subtle fw-bold">{{ $summary['percentage'] }}%</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="{{ $daysInMonth + 7 }}" class="text-center py-4 text-muted">No records found.</td>
+                                        <td colspan="{{ $daysInMonth + 6 }}" class="text-center py-4 text-muted">No records found.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -600,7 +594,6 @@
                         <h6 class="fw-bold mb-2 small text-uppercase" style="letter-spacing: 0.5px;">Matrix Legend</h6>
                         <div class="d-flex flex-wrap gap-2">
                             <span class="legend-item"><span class="legend-box cell-present"></span>Present (P)</span>
-                            <span class="legend-item"><span class="legend-box cell-late"></span>Late Check-in (L)</span>
                             <span class="legend-item"><span class="legend-box cell-absent"></span>Absent (A)</span>
                             <span class="legend-item"><span class="legend-box cell-holiday"></span>Holiday (H)</span>
                             <span class="legend-item"><span class="legend-box cell-leave"></span>Approved Leave (LV)</span>

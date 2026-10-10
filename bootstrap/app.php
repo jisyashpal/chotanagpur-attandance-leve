@@ -8,6 +8,7 @@ use App\Http\Middleware\CheckProfileCompletion;
 use App\Http\Middleware\VerifyAppKey;
 use App\Http\Middleware\EnsureJsonResponse;
 use App\Http\Middleware\VerifyDeviceId;
+use App\Http\Middleware\EnsureUserIsActive;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.key' => VerifyAppKey::class,
             'json.response' => EnsureJsonResponse::class,
             'device.verify' => VerifyDeviceId::class,
+            'active' => EnsureUserIsActive::class,
         ]);
 
         $middleware->api(prepend: [

@@ -71,6 +71,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // User Management
     Route::prefix('users')->name('users.')->group(function () {
+        Route::patch('/{id}/toggle-active', [UserManagementController::class, 'toggleActive'])->name('toggle_active');
         Route::get('/staff-faculty', [UserManagementController::class, 'staffFaculty'])->name('staff_faculty');
         Route::get('/staff-faculty/{id}', [UserManagementController::class, 'showStaffFaculty'])->name('staff_faculty.show');
         Route::get('/staff-faculty/{id}/edit', [UserManagementController::class, 'editStaffFaculty'])->name('staff_faculty.edit');

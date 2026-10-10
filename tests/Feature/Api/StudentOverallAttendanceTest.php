@@ -2,6 +2,7 @@
 
 use App\Models\AcademicSession;
 use App\Models\Course;
+use App\Models\LeaveRequest;
 use App\Models\Semester;
 use App\Models\StudentAttendance;
 use App\Models\StudentProfile;
@@ -170,4 +171,85 @@ test('student attendance can be filtered by month or semester', function () {
         ->assertJsonPath('semester_name', 'Semester 1')
         ->assertJsonFragment(['subject_name' => 'Constitutional Law', 'total_classes' => 2])
         ->assertJsonMissing(['subject_name' => 'Family Law']);
+});
+
+test('approved leave removes an absent class from the attendance percentage', function () {
+    Carbon::setTestNow('2026-09-15 10:00:00');
+
+    $session = AcademicSession::create(['name' => '2026-27', 'session_year' => 2026, 'is_active' => true]);
+    $course = Course::create(['name' => 'LLB', 'code' => 'LLB']);
+    $semester = Semester::create([
+        'name' => 'Semester 1',
+        'course_id' => $course->id,
+        'semester_number' => 1,
+        'part' => 'Part 1',
+    ]);
+    $subject = Subject::create(['name' => 'Constitutional Law', 'code' => 'CL01', 'semester_id' => $semester->id]);
+    $faculty = User::factory()->create(['role' => 'faculty']);
+    $student = User::factory()->create(['role' => 'student']);
+
+    UserDevice::create([
+        'user_id' => $student->id,
+        'device_id' => 'device-leave-1',
+        'fcm_token' => 'fcm-leave-1',
+        'platform' => 'android',
+    ]);
+
+    $base = [
+        'session_id' => $session->id,
+        'course_id' => $course->id,
+        'semester_id' => $semester->id,
+        'subject_id' => $subject->id,
+        'student_id' => $student->id,
+        'marked_by' => $faculty->id,
+    ];
+
+    StudentAttendance::create($base + ['date' => '2026-09-01', 'status' => 'present']);
+    StudentAttendance::create($base + ['date' => '2026-09-04', 'status' => 'absent']);
+    StudentAttendance::create($base + ['date' => '2026-09-05', 'status' => 'absent']);
+
+    LeaveRequest::create([
+        'user_id' => $student->id,
+        'from_date' => '2026-09-04',
+        'to_date' => '2026-09-04',
+        'reason' => 'Medical',
+        'status' => 'approved',
+        'approved_by' => $faculty->id,
+        'approved_at' => now(),
+    ]);
+
+    LeaveRequest::create([
+        'user_id' => $student->id,
+        'from_date' => '2026-09-05',
+        'to_date' => '2026-09-05',
+        'reason' => 'Still waiting',
+        'status' => 'pending',
+    ]);
+
+    Sanctum::actingAs($student);
+
+    $headers = [
+        'X-APP-KEY' => 'default-secret-key',
+        'X-DEVICE-ID' => 'device-leave-1',
+    ];
+
+    $this->getJson('/api/attendance/student/overall', $headers)
+        ->assertOk()
+        ->assertJsonPath('data.total_classes', 2)
+        ->assertJsonPath('data.attended', 1)
+        ->assertJsonPath('data.absent', 1)
+        ->assertJsonPath('data.leave', 1)
+        ->assertJsonPath('data.percentage', 50);
+
+    $this->getJson('/api/attendance/student', $headers)
+        ->assertOk()
+        ->assertJsonFragment([
+            'subject_name' => 'Constitutional Law',
+            'total_classes' => 2,
+            'attended_classes' => 1,
+            'leave_classes' => 1,
+            'percentage' => 50,
+        ])
+        ->assertJsonFragment(['date' => '2026-09-04', 'status' => 'leave'])
+        ->assertJsonFragment(['date' => '2026-09-05', 'status' => 'absent']);
 });

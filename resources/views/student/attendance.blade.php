@@ -109,7 +109,7 @@
                         </div>
                     </div>
                     <h2 class="fw-bold mb-2 text-danger">{{ $absentClasses }}</h2>
-                    <span class="text-muted small">Lectures absent</span>
+                    <span class="text-muted small">{{ $leaveClasses }} on approved leave</span>
                 </div>
             </div>
         </div>

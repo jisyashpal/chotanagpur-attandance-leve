@@ -14,12 +14,17 @@ use App\Models\Subject;
 use App\Models\User;
 use App\Models\Holiday;
 use App\Models\LeaveRequest;
+use App\Services\AttendanceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AttendanceReportController extends Controller
 {
+    public function __construct(protected AttendanceService $attendanceService)
+    {
+    }
+
     public function studentAttendance(Request $request)
     {
         [$courses, $batches, $sessions, $semesters, $sections, $subjects] = $this->academicFilterOptions($request);
@@ -65,16 +70,18 @@ class AttendanceReportController extends Controller
             $statsQuery = StudentAttendance::where('student_id', $selectedStudent->id);
             $this->applyStudentAttendanceFilters($statsQuery, $request);
 
-            $total = $statsQuery->count();
-            $present = (clone $statsQuery)->where('status', 'present')->count();
-            $absent = (clone $statsQuery)->where('status', 'absent')->count();
-            $percentage = $total > 0 ? round(($present / $total) * 100, 1) : 0;
+            $records = $statsQuery->get();
+            $counts = $this->attendanceService->studentAttendanceCounts(
+                $records,
+                $this->attendanceService->approvedLeavesForStudent($selectedStudent->id)
+            );
 
             $stats = [
-                'total' => $total,
-                'present' => $present,
-                'absent' => $absent,
-                'percentage' => $percentage
+                'total' => $counts['total'],
+                'present' => $counts['present'],
+                'absent' => $counts['absent'],
+                'leave' => $counts['leave'],
+                'percentage' => $counts['percentage'],
             ];
         }
 
@@ -138,25 +145,53 @@ class AttendanceReportController extends Controller
                 $statsQuery->whereDate('date', $request->date);
             }
 
-            $total = $statsQuery->count();
-            $present = (clone $statsQuery)->where('status', 'present')->count();
-            $late = (clone $statsQuery)->where('status', 'late')->count();
-            $absent = (clone $statsQuery)->where('status', 'absent')->count();
-            
-            // Attendance percentage can be present + late over total
-            $presentOrLate = $present + $late;
-            $percentage = $total > 0 ? round(($presentOrLate / $total) * 100, 1) : 0;
+            if ($request->filled('date')) {
+                $day = Carbon::parse($request->date)->startOfDay();
+                $punch = (clone $statsQuery)->first();
+                $leaves = $this->attendanceService->approvedLeavesForStudent($selectedUser->id);
+                $holidays = Holiday::query()
+                    ->whereDate('date', $day->toDateString())
+                    ->get()
+                    ->keyBy(fn ($holiday) => $holiday->date->format('Y-m-d'));
+                $dayStatus = $this->attendanceService->staffCalendarDayStatus(
+                    $punch->status ?? null,
+                    $day,
+                    $leaves,
+                    $holidays
+                );
+                $present = $dayStatus === 'present' ? 1 : 0;
+                $absent = $dayStatus === 'absent' ? 1 : 0;
+                $leave = $dayStatus === 'leave' ? 1 : 0;
+            } else {
+                $summary = $this->attendanceService->staffPortalSummary($selectedUser->id);
+                $present = $summary['present'];
+                $absent = $summary['absent'];
+                $leave = $summary['leave'];
+            }
+
+            $total = $present + $absent;
+            $percentage = $total > 0 ? round(($present / $total) * 100, 1) : 0;
 
             $stats = [
                 'total' => $total,
                 'present' => $present,
-                'late' => $late,
+                'leave' => $leave,
                 'absent' => $absent,
                 'percentage' => $percentage
             ];
         }
 
         $attendances = $query->latest()->paginate(15)->withQueryString();
+        $rowLeaves = $this->attendanceService->approvedLeavesForStudents($attendances->getCollection()->pluck('user_id'));
+        $attendances->getCollection()->transform(function ($attendance) use ($rowLeaves) {
+            $attendance->display_status = $this->attendanceService->staffPunchDisplayStatus(
+                $attendance->status,
+                $attendance->date,
+                $rowLeaves->get($attendance->user_id, collect())
+            );
+
+            return $attendance;
+        });
 
         return view('admin.attendance.staff_faculty', compact(
             'users',
@@ -269,43 +304,40 @@ class AttendanceReportController extends Controller
                     $studentAttendanceMatrix[$student->id] = [];
                     $records = $attendanceRecords->get($student->id, collect())->keyBy('date');
                     
-                    $presentCount = 0;
-                    $absentCount = 0;
-                    $totalMarked = 0;
+                    $userLeaves = $studentLeaves->get($student->id, collect());
+                    $counts = $this->attendanceService->studentAttendanceCounts($records->values(), $userLeaves);
+                    $leaveDayCount = 0;
 
                     for ($day = 1; $day <= $daysInMonth; $day++) {
                         $dateStr = sprintf('%04d-%02d-%02d', $year, $month, $day);
                         $carbonDate = Carbon::parse($dateStr);
-                        
+
                         $status = '';
                         $detail = '';
 
                         if ($carbonDate->isSunday()) {
                             $status = 'sunday';
                         }
-                        
+
                         if ($holidays->has($dateStr)) {
                             $status = 'holiday';
                             $detail = $holidays->get($dateStr)->name;
                         }
 
-                        $userLeaves = $studentLeaves->get($student->id, collect());
-                        $isOnLeave = $userLeaves->contains(function ($leave) use ($dateStr) {
-                            return $dateStr >= $leave->from_date && $dateStr <= $leave->to_date;
-                        });
-                        if ($isOnLeave) {
-                            $status = 'leave';
-                        }
+                        $isOnLeave = $this->attendanceService->dateIsApprovedLeave($dateStr, $userLeaves);
+                        $rec = $records->get($dateStr);
+                        $markedStatus = $rec ? strtolower((string) $rec->status) : null;
 
-                        if ($records->has($dateStr)) {
-                            $rec = $records->get($dateStr);
-                            $status = strtolower($rec->status) === 'present' ? 'present' : 'absent';
-                            if ($status === 'present') {
-                                $presentCount++;
-                            } else {
-                                $absentCount++;
-                            }
-                            $totalMarked++;
+                        if ($markedStatus === 'present') {
+                            $status = 'present';
+                        } elseif ($markedStatus === 'absent' && $isOnLeave) {
+                            $status = 'leave';
+                            $leaveDayCount++;
+                        } elseif ($markedStatus === 'absent') {
+                            $status = 'absent';
+                        } elseif ($isOnLeave && ! in_array($status, ['sunday', 'holiday'], true)) {
+                            $status = 'leave';
+                            $leaveDayCount++;
                         }
 
                         $studentAttendanceMatrix[$student->id][$day] = [
@@ -314,12 +346,12 @@ class AttendanceReportController extends Controller
                         ];
                     }
 
-                    $percentage = $totalMarked > 0 ? round(($presentCount / $totalMarked) * 100, 1) : 0;
                     $studentAttendanceSummary[$student->id] = [
-                        'present' => $presentCount,
-                        'absent' => $absentCount,
-                        'total' => $totalMarked,
-                        'percentage' => $percentage
+                        'present' => $counts['present'],
+                        'absent' => $counts['absent'],
+                        'leave' => $leaveDayCount,
+                        'total' => $counts['total'],
+                        'percentage' => $counts['percentage'],
                     ];
                 }
             } else {
@@ -332,16 +364,15 @@ class AttendanceReportController extends Controller
 
                 foreach ($students as $student) {
                     $records = $attendanceRecords->get($student->id, collect());
-                    $presentCount = $records->where('status', 'present')->count();
-                    $absentCount = $records->where('status', 'absent')->count();
-                    $totalMarked = $records->count();
-                    $percentage = $totalMarked > 0 ? round(($presentCount / $totalMarked) * 100, 1) : 0;
+                    $userLeaves = $studentLeaves->get($student->id, collect());
+                    $counts = $this->attendanceService->studentAttendanceCounts($records, $userLeaves);
 
                     $studentAttendanceSummary[$student->id] = [
-                        'present' => $presentCount,
-                        'absent' => $absentCount,
-                        'total' => $totalMarked,
-                        'percentage' => $percentage
+                        'present' => $counts['present'],
+                        'absent' => $counts['absent'],
+                        'leave' => $counts['leave'],
+                        'total' => $counts['total'],
+                        'percentage' => $counts['percentage'],
                     ];
                 }
             }
@@ -400,83 +431,17 @@ class AttendanceReportController extends Controller
         $staffAttendanceSummary = [];
 
         foreach ($staffUsers as $staff) {
-            $staffAttendanceMatrix[$staff->id] = [];
-            $records = $staffAttendanceRecords->get($staff->id, collect())->keyBy('date');
-            
-            $presentCount = 0;
-            $lateCount = 0;
-            $absentCount = 0;
-            $leaveCount = 0;
-            $totalMarked = 0;
+            $records = $staffAttendanceRecords->get($staff->id, collect());
+            $userLeaves = $staffLeaves->get($staff->id, collect());
+            $report = $this->attendanceService->staffMonthReport($records, $userLeaves, $holidays, $currentDate->copy()->startOfMonth());
 
-            for ($day = 1; $day <= $daysInMonth; $day++) {
-                $dateStr = sprintf('%04d-%02d-%02d', $year, $month, $day);
-                $carbonDate = Carbon::parse($dateStr);
-                
-                $status = '';
-                $detail = '';
-
-                if ($carbonDate->isSunday()) {
-                    $status = 'sunday';
-                }
-                
-                if ($holidays->has($dateStr)) {
-                    $status = 'holiday';
-                    $detail = $holidays->get($dateStr)->name;
-                }
-
-                $userLeaves = $staffLeaves->get($staff->id, collect());
-                $isOnLeave = $userLeaves->contains(function ($leave) use ($dateStr) {
-                    return $dateStr >= $leave->from_date && $dateStr <= $leave->to_date;
-                });
-                if ($isOnLeave) {
-                    $status = 'leave';
-                    $leaveCount++;
-                }
-
-                if ($records->has($dateStr)) {
-                    $rec = $records->get($dateStr);
-                    $status = strtolower($rec->status);
-                    
-                    if ($status === 'present') {
-                        $presentCount++;
-                    } elseif ($status === 'late') {
-                        $lateCount++;
-                    } elseif ($status === 'absent') {
-                        $absentCount++;
-                    }
-
-                    $checkInStr = $rec->check_in ? Carbon::parse($rec->check_in)->format('h:i A') : '';
-                    $checkOutStr = $rec->check_out ? Carbon::parse($rec->check_out)->format('h:i A') : '';
-                    if ($checkInStr || $checkOutStr) {
-                        $detail = "In: " . ($checkInStr ?: '-') . " | Out: " . ($checkOutStr ?: '-');
-                    }
-                    $totalMarked++;
-                } else {
-                    if ($carbonDate->isPast() && !$carbonDate->isToday() && $status === '') {
-                        $status = 'absent';
-                        $absentCount++;
-                        $totalMarked++;
-                    }
-                }
-
-                $staffAttendanceMatrix[$staff->id][$day] = [
-                    'status' => $status,
-                    'detail' => $detail
-                ];
-            }
-
-            $totalWorking = $presentCount + $lateCount + $absentCount;
-            $presentOrLate = $presentCount + $lateCount;
-            $percentage = $totalWorking > 0 ? round(($presentOrLate / $totalWorking) * 100, 1) : 0;
-
+            $staffAttendanceMatrix[$staff->id] = $report['cells'];
             $staffAttendanceSummary[$staff->id] = [
-                'present' => $presentCount,
-                'late' => $lateCount,
-                'absent' => $absentCount,
-                'leave' => $leaveCount,
-                'total' => $totalWorking,
-                'percentage' => $percentage
+                'present' => $report['present'],
+                'absent' => $report['absent'],
+                'leave' => $report['leave'],
+                'total' => $report['total'],
+                'percentage' => $report['percentage'],
             ];
         }
 

@@ -32,7 +32,7 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // Protected Routes
-Route::middleware(['auth:sanctum', 'device.verify'])->group(function () {
+Route::middleware(['auth:sanctum', 'active', 'device.verify'])->group(function () {
     Route::get('/user', [ProfileController::class, 'me']);
     Route::post('/profile/update', [ProfileController::class, 'update']);
     Route::post('/profile/change-password', [ProfileController::class, 'changePassword']);

@@ -5,9 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use App\Models\Attendance;
+use App\Services\AttendanceService;
 
 class StaffController extends Controller
 {
+    public function __construct(protected AttendanceService $attendanceService)
+    {
+    }
+
     /**
      * Display the staff portal dashboard.
      */
@@ -30,26 +35,26 @@ class StaffController extends Controller
             ->latest('check_in')
             ->paginate(20);
 
-        // Compute metrics
-        $allAttendances = Attendance::where('user_id', $user->id)->get();
-        $totalDays = $allAttendances->count();
-        $presentDays = $allAttendances->filter(function($record) {
-            return in_array(strtolower($record->status), ['present', 'late']);
-        })->count();
-        $lateDays = $allAttendances->filter(function($record) {
-            return strtolower($record->status) === 'late';
-        })->count();
-        $absentDays = $totalDays - $presentDays;
-        
-        $attendancePercentage = $totalDays > 0 ? round(($presentDays / $totalDays) * 100, 2) : 0;
+        $leaves = $this->attendanceService->approvedLeavesForStudent($user->id);
+        $attendances->getCollection()->transform(function ($attendance) use ($leaves) {
+            $attendance->display_status = $this->attendanceService->staffPunchDisplayStatus(
+                $attendance->status,
+                $attendance->date,
+                $leaves
+            );
 
-        return view('staff.attendance', compact(
-            'attendances',
-            'totalDays',
-            'presentDays',
-            'lateDays',
-            'absentDays',
-            'attendancePercentage'
-        ));
+            return $attendance;
+        });
+
+        $summary = $this->attendanceService->staffPortalSummary($user->id, 2);
+
+        return view('staff.attendance', [
+            'attendances' => $attendances,
+            'totalDays' => $summary['total'],
+            'presentDays' => $summary['present'],
+            'leaveDays' => $summary['leave'],
+            'absentDays' => $summary['absent'],
+            'attendancePercentage' => $summary['percentage'],
+        ]);
     }
 }

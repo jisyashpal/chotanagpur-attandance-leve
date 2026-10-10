@@ -12,6 +12,8 @@ use App\Models\StudentAttendance;
 use App\Models\Subject;
 use App\Models\User;
 use App\Models\StudentProfile;
+use App\Services\AttendanceService;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +21,10 @@ use Illuminate\Validation\ValidationException;
 
 class AttendanceController extends Controller
 {
+    public function __construct(protected AttendanceService $attendanceService)
+    {
+    }
+
     /**
      * Mark Staff/Faculty Attendance (Self)
      */
@@ -29,10 +35,29 @@ class AttendanceController extends Controller
         $records = Attendance::where('user_id', $user->id)
             ->orderBy('date', 'desc')
             ->get();
+        $leaves = $this->attendanceService->approvedLeavesForStudent($user->id);
+        $summary = $this->attendanceService->staffPortalSummary($user->id);
+
+        $data = $records->map(function ($record) use ($leaves) {
+            $row = $record->toArray();
+            $row['status'] = $this->attendanceService->staffPunchDisplayStatus(
+                $record->status,
+                $record->date,
+                $leaves
+            );
+
+            return $row;
+        })->values();
 
         return response()->json([
             'status' => 'success',
-            'data' => $records
+            'summary' => [
+                'present' => $summary['present'],
+                'absent' => $summary['absent'],
+                'leave' => $summary['leave'],
+                'percentage' => $summary['percentage'],
+            ],
+            'data' => $data,
         ]);
     }
     
@@ -295,33 +320,39 @@ class AttendanceController extends Controller
 
         $markedBy = $request->user()->id;
         $date = Carbon::parse($request->date)->format('Y-m-d');
+        $createdCount = 0;
+        $updatedCount = 0;
 
         DB::beginTransaction();
         try {
-            foreach ($request->attendance as $studentId => $status) {
-                StudentAttendance::updateOrCreate(
-                    [
-                        'student_id' => $studentId,
-                        'subject_id' => $request->subject_id,
-                        'section_id' => $request->section_id,
-                        'date' => $date,
-                    ],
-                    [
-                        'batch_id' => $batchId,
-                        'session_id' => $request->session_id,
-                        'course_id' => $request->course_id,
-                        'semester_id' => $request->semester_id,
-                        'section_id' => $request->section_id,
-                        'status' => $status,
-                        'marked_by' => $markedBy
-                    ]
-                );
-            }
+            AuditLogger::withoutLogging(function () use ($request, $date, $batchId, $markedBy, &$createdCount, &$updatedCount) {
+                foreach ($request->attendance as $studentId => $status) {
+                    $record = StudentAttendance::updateOrCreate(
+                        [
+                            'student_id' => $studentId,
+                            'subject_id' => $request->subject_id,
+                            'section_id' => $request->section_id,
+                            'date' => $date,
+                        ],
+                        [
+                            'batch_id' => $batchId,
+                            'session_id' => $request->session_id,
+                            'course_id' => $request->course_id,
+                            'semester_id' => $request->semester_id,
+                            'section_id' => $request->section_id,
+                            'status' => $status,
+                            'marked_by' => $markedBy
+                        ]
+                    );
+
+                    if ($record->wasRecentlyCreated) {
+                        $createdCount++;
+                    } else {
+                        $updatedCount++;
+                    }
+                }
+            });
             DB::commit();
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Student attendance marked successfully.'
-            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -329,6 +360,74 @@ class AttendanceController extends Controller
                 'message' => 'Failed to mark attendance: ' . $e->getMessage()
             ], 500);
         }
+
+        $this->logClassAttendance($request, $batchId, $date, $markedBy, $createdCount, $updatedCount);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Student attendance marked successfully.'
+        ]);
+    }
+
+    /**
+     * One activity log for the whole class, not one row per student.
+     */
+    private function logClassAttendance(Request $request, $batchId, string $date, int $markedBy, int $createdCount, int $updatedCount): void
+    {
+        $total = count($request->attendance);
+        if ($total === 0) {
+            return;
+        }
+
+        $sectionName = Section::whereKey($request->section_id)->value('name');
+        $subjectName = Subject::whereKey($request->subject_id)->value('name');
+        $students = User::whereIn('id', array_keys($request->attendance))
+            ->with('studentProfile:id,user_id,roll_no')
+            ->get(['id', 'name'])
+            ->keyBy('id');
+
+        $studentList = collect($request->attendance)->map(function ($status, $studentId) use ($students) {
+            $student = $students->get((int) $studentId);
+
+            return [
+                'student_id' => (int) $studentId,
+                'name' => $student->name ?? null,
+                'roll_no' => $student->studentProfile->roll_no ?? null,
+                'status' => $status,
+            ];
+        })->values();
+
+        $presentCount = $studentList->where('status', 'present')->count();
+
+        AuditLogger::log(
+            $createdCount > 0 ? 'created' : 'updated',
+            null,
+            null,
+            [
+                'batch_id' => $batchId ? (int) $batchId : null,
+                'session_id' => (int) $request->session_id,
+                'course_id' => (int) $request->course_id,
+                'semester_id' => (int) $request->semester_id,
+                'section_id' => (int) $request->section_id,
+                'section_name' => $sectionName,
+                'subject_id' => (int) $request->subject_id,
+                'subject_name' => $subjectName,
+                'date' => $date,
+                'marked_by' => $markedBy,
+                'total_students' => $total,
+                'present_count' => $presentCount,
+                'absent_count' => $total - $presentCount,
+                'created_count' => $createdCount,
+                'updated_count' => $updatedCount,
+                'students' => $studentList->all(),
+            ],
+            sprintf(
+                'Student attendance marked for %s · %s on %s',
+                $sectionName ?: 'section',
+                $subjectName ?: 'subject',
+                $date
+            )
+        );
     }
 
     /**
@@ -374,26 +473,24 @@ class AttendanceController extends Controller
         }
 
         $records = $query->orderBy('date', 'desc')->get();
+        $approvedLeaves = $this->attendanceService->approvedLeavesForStudent($user->id);
 
-        $grouped = $records->groupBy('subject_id')->map(function ($subjectRecords) {
+        $grouped = $records->groupBy('subject_id')->map(function ($subjectRecords) use ($approvedLeaves) {
             $subject = $subjectRecords->first()->subject;
-            $totalClasses = $subjectRecords->count();
-            $attendedClasses = $subjectRecords->filter(function ($record) {
-                return strtolower($record->status) === 'present';
-            })->count();
-            $percentage = $totalClasses > 0 ? round(($attendedClasses / $totalClasses) * 100, 2) : 0;
+            $counts = $this->attendanceService->studentAttendanceCounts($subjectRecords, $approvedLeaves, 2);
 
             return [
                 'subject_id' => $subject->id ?? null,
                 'subject_name' => $subject->name ?? 'Unknown',
-                'total_classes' => $totalClasses,
-                'attended_classes' => $attendedClasses,
-                'percentage' => $percentage,
-                'records' => $subjectRecords->map(function ($record) {
+                'total_classes' => $counts['total'],
+                'attended_classes' => $counts['present'],
+                'leave_classes' => $counts['leave'],
+                'percentage' => $counts['percentage'],
+                'records' => $subjectRecords->map(function ($record) use ($approvedLeaves) {
                     return [
                         'id' => $record->id,
                         'date' => $record->date,
-                        'status' => $record->status,
+                        'status' => $this->attendanceService->studentRecordDisplayStatus($record, $approvedLeaves),
                     ];
                 })->values()
             ];
@@ -426,11 +523,10 @@ class AttendanceController extends Controller
         $query = StudentAttendance::where('student_id', $request->user()->id);
         $this->applyStudentAttendancePeriod($query, $period);
         $records = $query->get();
-
-        $presentCount = $records->where('status', 'present')->count();
-        $absentCount = $records->where('status', 'absent')->count();
-        $totalMarked = $records->count();
-        $percentage = $totalMarked > 0 ? round(($presentCount / $totalMarked) * 100, 1) : 0;
+        $counts = $this->attendanceService->studentAttendanceCounts(
+            $records,
+            $this->attendanceService->approvedLeavesForStudent($request->user()->id)
+        );
 
         return response()->json([
             'status' => 'success',
@@ -439,10 +535,11 @@ class AttendanceController extends Controller
                 'month' => $period['month'],
                 'semester_id' => $period['semester_id'],
                 'semester_name' => $period['semester_name'],
-                'total_classes' => $totalMarked,
-                'attended' => $presentCount,
-                'absent' => $absentCount,
-                'percentage' => $percentage,
+                'total_classes' => $counts['total'],
+                'attended' => $counts['present'],
+                'absent' => $counts['absent'],
+                'leave' => $counts['leave'],
+                'percentage' => $counts['percentage'],
             ],
         ]);
     }
@@ -506,27 +603,7 @@ class AttendanceController extends Controller
      */
     public function getFacultyAttendanceSummary(Request $request)
     {
-        $query = StudentAttendance::query()
-            ->select(
-                'marked_by',
-                'session_id',
-                'course_id',
-                'semester_id',
-                'section_id',
-                'subject_id',
-                'date',
-                DB::raw('COUNT(*) as total_students'),
-                DB::raw('SUM(CASE WHEN status = "present" THEN 1 ELSE 0 END) as present_count'),
-                DB::raw('SUM(CASE WHEN status = "absent" THEN 1 ELSE 0 END) as absent_count')
-            )
-            ->with([
-                'marker:id,name',
-                'subject:id,name',
-                'course:id,name',
-                'semester:id,name',
-                'section:id,name',
-                'session:id,name'
-            ]);
+        $query = StudentAttendance::query();
 
         if ($request->filled('date')) {
             $query->where('date', $request->date);
@@ -556,29 +633,182 @@ class AttendanceController extends Controller
             $query->where('session_id', $request->session_id);
         }
 
-        $summary = $query->groupBy('marked_by', 'session_id', 'course_id', 'semester_id', 'section_id', 'subject_id', 'date')
+        $summary = (clone $query)
+            ->select(
+                'marked_by',
+                'session_id',
+                'course_id',
+                'semester_id',
+                'section_id',
+                'subject_id',
+                'date',
+                DB::raw('COUNT(*) as total_students'),
+                DB::raw('SUM(CASE WHEN status = "present" THEN 1 ELSE 0 END) as present_count'),
+                DB::raw('SUM(CASE WHEN status = "absent" THEN 1 ELSE 0 END) as absent_count')
+            )
+            ->with([
+                'marker:id,name',
+                'subject:id,name',
+                'course:id,name',
+                'semester:id,name',
+                'section:id,name',
+                'session:id,name'
+            ])
+            ->groupBy('marked_by', 'session_id', 'course_id', 'semester_id', 'section_id', 'subject_id', 'date')
             ->orderBy('date', 'desc')
-            ->get()
-            ->map(function ($record) {
-                return [
-                    'marked_by' => $record->marked_by,
-                    'session_id' => $record->session_id,
-                    'course_id' => $record->course_id,
-                    'semester_id' => $record->semester_id,
-                    'section_id' => $record->section_id,
-                    'subject_id' => $record->subject_id,
-                    'teacher_name' => $record->marker->name ?? 'Unknown',
-                    'session_name' => $record->session->name ?? 'N/A',
-                    'course_name' => $record->course->name ?? 'N/A',
-                    'semester_name' => $record->semester->name ?? 'N/A',
-                    'section_name' => $record->section->name ?? 'N/A',
-                    'subject_name' => $record->subject->name ?? 'N/A',
-                    'date' => $record->date,
-                    'total_students' => $record->total_students,
-                    'present_count' => (int) $record->present_count,
-                    'absent_count' => (int) $record->absent_count,
-                ];
-            });
+            ->get();
+
+        $classMarkQuery = StudentAttendance::query();
+        foreach (['date', 'course_id', 'semester_id', 'subject_id', 'section_id', 'session_id'] as $filter) {
+            if ($request->filled($filter)) {
+                $classMarkQuery->where($filter, $request->input($filter));
+            }
+        }
+
+        $marks = $summary->isEmpty()
+            ? collect()
+            : (clone $query)->get([
+                'student_id',
+                'status',
+                'date',
+                'marked_by',
+                'session_id',
+                'course_id',
+                'semester_id',
+                'section_id',
+                'subject_id',
+            ]);
+
+        $classMarks = $summary->isEmpty()
+            ? collect()
+            : $classMarkQuery->get([
+                'student_id',
+                'date',
+                'session_id',
+                'course_id',
+                'semester_id',
+                'section_id',
+                'subject_id',
+            ]);
+
+        $profiles = $summary->isEmpty()
+            ? collect()
+            : StudentProfile::query()
+                ->where(function ($outer) use ($summary) {
+                    foreach ($summary as $row) {
+                        $outer->orWhere(function ($inner) use ($row) {
+                            $inner->where('session_id', $row->session_id)
+                                ->where('course_id', $row->course_id)
+                                ->where('semester_id', $row->semester_id)
+                                ->where('section_id', $row->section_id);
+                        });
+                    }
+                })
+                ->get(['user_id', 'session_id', 'course_id', 'semester_id', 'section_id']);
+
+        $approvedLeaves = $this->attendanceService->approvedLeavesForStudents(
+            $marks->pluck('student_id')->merge($classMarks->pluck('student_id'))->merge($profiles->pluck('user_id'))
+        );
+
+        $marksByGroup = $marks->groupBy(function ($mark) {
+            return implode('|', [
+                $mark->marked_by,
+                $mark->session_id,
+                $mark->course_id,
+                $mark->semester_id,
+                $mark->section_id,
+                $mark->subject_id,
+                Carbon::parse($mark->date)->toDateString(),
+            ]);
+        });
+
+        $markedIdsByClassDate = $classMarks->groupBy(function ($mark) {
+            return implode('|', [
+                $mark->session_id,
+                $mark->course_id,
+                $mark->semester_id,
+                $mark->section_id,
+                $mark->subject_id,
+                Carbon::parse($mark->date)->toDateString(),
+            ]);
+        })->map(fn ($rows) => $rows->pluck('student_id'));
+
+        $profilesByClass = $profiles->groupBy(function ($profile) {
+            return implode('|', [
+                $profile->session_id,
+                $profile->course_id,
+                $profile->semester_id,
+                $profile->section_id,
+            ]);
+        });
+
+        $summary = $summary->map(function ($record) use ($marksByGroup, $markedIdsByClassDate, $profilesByClass, $approvedLeaves) {
+            $date = Carbon::parse($record->date)->toDateString();
+            $groupKey = implode('|', [
+                $record->marked_by,
+                $record->session_id,
+                $record->course_id,
+                $record->semester_id,
+                $record->section_id,
+                $record->subject_id,
+                $date,
+            ]);
+            $classDateKey = implode('|', [
+                $record->session_id,
+                $record->course_id,
+                $record->semester_id,
+                $record->section_id,
+                $record->subject_id,
+                $date,
+            ]);
+            $classKey = implode('|', [
+                $record->session_id,
+                $record->course_id,
+                $record->semester_id,
+                $record->section_id,
+            ]);
+
+            $absentOnLeave = $marksByGroup->get($groupKey, collect())
+                ->filter(function ($mark) use ($approvedLeaves, $date) {
+                    return strtolower((string) $mark->status) === 'absent'
+                        && $this->attendanceService->dateIsApprovedLeave(
+                            $date,
+                            $approvedLeaves->get($mark->student_id, collect())
+                        );
+                })
+                ->count();
+
+            $alreadyMarked = $markedIdsByClassDate->get($classDateKey, collect());
+            $unmarkedOnLeave = $profilesByClass->get($classKey, collect())
+                ->reject(fn ($profile) => $alreadyMarked->contains($profile->user_id))
+                ->filter(function ($profile) use ($approvedLeaves, $date) {
+                    return $this->attendanceService->dateIsApprovedLeave(
+                        $date,
+                        $approvedLeaves->get($profile->user_id, collect())
+                    );
+                })
+                ->count();
+
+            return [
+                'marked_by' => $record->marked_by,
+                'session_id' => $record->session_id,
+                'course_id' => $record->course_id,
+                'semester_id' => $record->semester_id,
+                'section_id' => $record->section_id,
+                'subject_id' => $record->subject_id,
+                'teacher_name' => $record->marker->name ?? 'Unknown',
+                'session_name' => $record->session->name ?? 'N/A',
+                'course_name' => $record->course->name ?? 'N/A',
+                'semester_name' => $record->semester->name ?? 'N/A',
+                'section_name' => $record->section->name ?? 'N/A',
+                'subject_name' => $record->subject->name ?? 'N/A',
+                'date' => $record->date,
+                'total_students' => $record->total_students,
+                'present_count' => (int) $record->present_count,
+                'absent_count' => max((int) $record->absent_count - $absentOnLeave, 0),
+                'leave_count' => $absentOnLeave + $unmarkedOnLeave,
+            ];
+        });
 
         return response()->json([
             'status' => 'success',
@@ -636,13 +866,21 @@ class AttendanceController extends Controller
             }
         }
 
-        $records = $allUsers->values()->map(function ($user) use ($attendanceMap) {
+        $approvedLeaves = $this->attendanceService->approvedLeavesForStudents($allUsers->keys());
+
+        $records = $allUsers->values()->map(function ($user) use ($attendanceMap, $approvedLeaves, $request) {
+            $leaves = $approvedLeaves->get($user->id, collect());
+
             return [
                 'id' => $user->id,
                 'name' => $user->name,
                 'roll_no' => $user->studentProfile->roll_no ?? 'N/A',
                 'profile_photo' => $user->getProfilePhotoUrl(),
-                'status' => $attendanceMap->get($user->id, 'absent'),
+                'status' => $this->attendanceService->classDayStatus(
+                    $attendanceMap->get($user->id),
+                    $request->date,
+                    $leaves
+                ),
             ];
         })->sortBy('roll_no', SORT_NATURAL)->values();
 
@@ -802,27 +1040,24 @@ class AttendanceController extends Controller
             ->orderBy('date', 'desc')
             ->get();
 
-        $totalClasses = $records->count();
-        $presentClasses = $records->filter(fn ($r) => strtolower((string) $r->status) === 'present')->count();
-        $absentClasses = $records->filter(fn ($r) => strtolower((string) $r->status) === 'absent')->count();
-        $percentage = $totalClasses > 0 ? round(($presentClasses / $totalClasses) * 100, 2) : 0;
+        $approvedLeaves = $this->attendanceService->approvedLeavesForStudent($student->id);
+        $counts = $this->attendanceService->studentAttendanceCounts($records, $approvedLeaves, 2);
 
         $subjectWise = $records
             ->groupBy('subject_id')
-            ->map(function ($subjectRecords) {
+            ->map(function ($subjectRecords) use ($approvedLeaves) {
                 $subject = $subjectRecords->first()->subject;
-                $subjectTotal = $subjectRecords->count();
-                $subjectPresent = $subjectRecords->filter(fn ($r) => strtolower((string) $r->status) === 'present')->count();
-                $subjectAbsent = $subjectRecords->filter(fn ($r) => strtolower((string) $r->status) === 'absent')->count();
+                $subjectCounts = $this->attendanceService->studentAttendanceCounts($subjectRecords, $approvedLeaves, 2);
 
                 return [
                     'subject_id' => $subject?->id,
                     'subject_name' => $subject?->name ?? 'Unknown',
                     'subject_code' => $subject?->code,
-                    'total_classes' => $subjectTotal,
-                    'present_classes' => $subjectPresent,
-                    'absent_classes' => $subjectAbsent,
-                    'percentage' => $subjectTotal > 0 ? round(($subjectPresent / $subjectTotal) * 100, 2) : 0,
+                    'total_classes' => $subjectCounts['total'],
+                    'present_classes' => $subjectCounts['present'],
+                    'absent_classes' => $subjectCounts['absent'],
+                    'leave_classes' => $subjectCounts['leave'],
+                    'percentage' => $subjectCounts['percentage'],
                 ];
             })
             ->values();
@@ -847,10 +1082,11 @@ class AttendanceController extends Controller
                     'section' => $matchedProfile?->section?->name,
                 ],
                 'summary' => [
-                    'total_classes' => $totalClasses,
-                    'present_classes' => $presentClasses,
-                    'absent_classes' => $absentClasses,
-                    'percentage' => $percentage,
+                    'total_classes' => $counts['total'],
+                    'present_classes' => $counts['present'],
+                    'absent_classes' => $counts['absent'],
+                    'leave_classes' => $counts['leave'],
+                    'percentage' => $counts['percentage'],
                 ],
                 'subject_wise' => $subjectWise,
                 'filters' => [
@@ -864,11 +1100,11 @@ class AttendanceController extends Controller
                     'from_date' => $request->from_date,
                     'to_date' => $request->to_date,
                 ],
-                'records' => $records->map(function ($record) {
+                'records' => $records->map(function ($record) use ($approvedLeaves) {
                     return [
                         'id' => $record->id,
                         'date' => $record->date,
-                        'status' => $record->status,
+                        'status' => $this->attendanceService->studentRecordDisplayStatus($record, $approvedLeaves),
                         'subject' => [
                             'id' => $record->subject?->id,
                             'name' => $record->subject?->name,

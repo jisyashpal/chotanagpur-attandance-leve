@@ -145,7 +145,7 @@ class LeaveManagementController extends Controller
                 'staff_faculty' => [
                     'user_id' => '', 'name' => '', 'email' => '', 'role' => '',
                     'employee_id' => '', 'designation' => '', 'department' => '',
-                    'total_days' => '', 'present_days' => '', 'late_days' => '',
+                    'total_days' => '', 'present_days' => '',
                     'approved_leave_days' => '', 'absent_days' => '', 'pending_leave_requests' => '',
                 ],
                 'students' => [

@@ -1252,728 +1252,742 @@
       "name": "Attendance",
       "item": [
         {
-          "name": "Staff/Faculty Check-In / Out",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "X-APP-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "X-DEVICE-ID",
-                "value": "{{device_id}}"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "latitude",
-                  "value": "23.3441",
-                  "type": "text"
+          "name": "Student",
+          "item": [
+            {
+              "name": "Get Student Overall Attendance (Monthly)",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
                 },
-                {
-                  "key": "longitude",
-                  "value": "85.3096",
-                  "type": "text"
-                }
-              ]
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-APP-KEY",
+                    "value": "{{api_key}}"
+                  },
+                  {
+                    "key": "X-DEVICE-ID",
+                    "value": "{{device_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/attendance/student/overall?filter=month&month=2026-09",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "student",
+                    "overall"
+                  ],
+                  "query": [
+                    {
+                      "key": "filter",
+                      "value": "month",
+                      "description": "month or semester. Default is month (current month)."
+                    },
+                    {
+                      "key": "month",
+                      "value": "2026-09",
+                      "description": "YYYY-MM. Used when filter=month. Omit for the current month."
+                    },
+                    {
+                      "key": "semester_id",
+                      "value": "{{semester_id}}",
+                      "description": "Used when filter=semester. Omit to use the student's profile semester.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Student role only. Overall attendance for one month, all subjects. Returns total_classes, attended, absent, leave, and percentage. Percentage is present / (present + absent). Leave is outside that total. Login with Student Login first."
+              },
+              "response": []
             },
-            "url": {
-              "raw": "{{base_url}}/attendance/staff-mark",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "staff-mark"
-              ]
+            {
+              "name": "Get Student Overall Attendance (Semester)",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-APP-KEY",
+                    "value": "{{api_key}}"
+                  },
+                  {
+                    "key": "X-DEVICE-ID",
+                    "value": "{{device_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/attendance/student/overall?filter=semester&semester_id={{semester_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "student",
+                    "overall"
+                  ],
+                  "query": [
+                    {
+                      "key": "filter",
+                      "value": "semester",
+                      "description": "Whole semester, all months."
+                    },
+                    {
+                      "key": "semester_id",
+                      "value": "{{semester_id}}",
+                      "description": "Optional. Omit to use the logged-in student's current semester."
+                    }
+                  ]
+                },
+                "description": "Student role only. Overall attendance for one semester. Returns semester_id, semester_name, total_classes, attended, absent, leave, and percentage. Percentage is present / (present + absent). Leave is outside that total."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Self Student Attendance (Subject Wise, Monthly)",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-APP-KEY",
+                    "value": "{{api_key}}"
+                  },
+                  {
+                    "key": "X-DEVICE-ID",
+                    "value": "{{device_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/attendance/student?filter=month&month=2026-09",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "student"
+                  ],
+                  "query": [
+                    {
+                      "key": "filter",
+                      "value": "month",
+                      "description": "month or semester. Omit filter, month, and semester_id to get all records."
+                    },
+                    {
+                      "key": "month",
+                      "value": "2026-09",
+                      "description": "YYYY-MM. Used when filter=month."
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "Optional subject name search.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Student role only. Subject-wise attendance for one month. Each subject includes total_classes, attended_classes, leave_classes, and percentage. A record status is leave when that class was absent on an approved leave date."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Self Student Attendance (Subject Wise, Semester)",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-APP-KEY",
+                    "value": "{{api_key}}"
+                  },
+                  {
+                    "key": "X-DEVICE-ID",
+                    "value": "{{device_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/attendance/student?filter=semester&semester_id={{semester_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "student"
+                  ],
+                  "query": [
+                    {
+                      "key": "filter",
+                      "value": "semester"
+                    },
+                    {
+                      "key": "semester_id",
+                      "value": "{{semester_id}}",
+                      "description": "Optional. Omit to use the logged-in student's current semester."
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "Optional subject name search.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Student role only. Subject-wise attendance for one semester. Each subject includes total_classes, attended_classes, leave_classes, and percentage. A record status is leave when that class was absent on an approved leave date."
+              },
+              "response": []
             }
-          },
-          "response": []
+          ]
         },
         {
-          "name": "Get Staff/Faculty Attendance History",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
+          "name": "Staff/Faculty",
+          "item": [
+            {
+              "name": "Staff/Faculty Check-In / Out",
+              "request": {
+                "description": "Staff or faculty only. The first call checks in and stores status present. Check-out is optional: a missing check-out still counts as present. There is no late or half-day status. A second call on the same day only sets check_out.",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-APP-KEY",
+                    "value": "{{api_key}}"
+                  },
+                  {
+                    "key": "X-DEVICE-ID",
+                    "value": "{{device_id}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "latitude",
+                      "value": "23.3441",
+                      "type": "text"
+                    },
+                    {
+                      "key": "longitude",
+                      "value": "85.3096",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/attendance/staff-mark",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "staff-mark"
+                  ]
                 }
-              ]
+              },
+              "response": []
             },
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
+            {
+              "name": "Get Staff/Faculty Attendance History",
+              "request": {
+                "description": "Staff or faculty punch history plus summary.present, summary.absent, summary.leave, and summary.percentage. A stored late status is returned as present. Missing check_out stays present. summary.leave counts approved leave dates with no present punch, excluding Sundays and holidays. A present punch on a leave date stays present. Percentage is present / (present + absent).",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-APP-KEY",
+                    "value": "{{api_key}}"
+                  },
+                  {
+                    "key": "X-DEVICE-ID",
+                    "value": "{{device_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/attendance/staff-attendance",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "staff-attendance"
+                  ]
+                }
               },
-              {
-                "key": "X-APP-KEY",
-                "value": "{{api_key}}"
+              "response": []
+            },
+            {
+              "name": "Get Students List For Attendance",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-APP-KEY",
+                    "value": "{{api_key}}"
+                  },
+                  {
+                    "key": "X-DEVICE-ID",
+                    "value": "{{device_id}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "batch_id",
+                      "value": "{{batch_id}}",
+                      "type": "text",
+                      "description": "Batch 2024-27 (id from seeder)"
+                    },
+                    {
+                      "key": "session_id",
+                      "value": "{{session_id}}",
+                      "type": "text",
+                      "description": "Session 2024-25 under batch"
+                    },
+                    {
+                      "key": "course_id",
+                      "value": "{{course_id}}",
+                      "type": "text",
+                      "description": "LLB3"
+                    },
+                    {
+                      "key": "semester_id",
+                      "value": "{{semester_id}}",
+                      "type": "text",
+                      "description": "Semester I"
+                    },
+                    {
+                      "key": "section_id",
+                      "value": "{{section_id}}",
+                      "type": "text",
+                      "description": "Section A"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/attendance/students",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "students"
+                  ]
+                },
+                "description": "Demo seeder values: LLB3 course, batch 2024-27, session 2024-25, Semester I, Section A (students ROLL-001..005)."
               },
-              {
-                "key": "X-DEVICE-ID",
-                "value": "{{device_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/attendance/staff-attendance",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "staff-attendance"
-              ]
+              "response": []
+            },
+            {
+              "name": "Mark Student Attendance",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-APP-KEY",
+                    "value": "{{api_key}}"
+                  },
+                  {
+                    "key": "X-DEVICE-ID",
+                    "value": "{{device_id}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "batch_id",
+                      "value": "{{batch_id}}",
+                      "type": "text",
+                      "description": "Batch 2024-27"
+                    },
+                    {
+                      "key": "session_id",
+                      "value": "{{session_id}}",
+                      "type": "text",
+                      "description": "Session 2024-25"
+                    },
+                    {
+                      "key": "course_id",
+                      "value": "{{course_id}}",
+                      "type": "text",
+                      "description": "LLB3"
+                    },
+                    {
+                      "key": "semester_id",
+                      "value": "{{semester_id}}",
+                      "type": "text",
+                      "description": "Semester I"
+                    },
+                    {
+                      "key": "section_id",
+                      "value": "{{section_id}}",
+                      "type": "text",
+                      "description": "Section A"
+                    },
+                    {
+                      "key": "subject_id",
+                      "value": "{{subject_id}}",
+                      "type": "text",
+                      "description": "LLB101 Jurisprudence"
+                    },
+                    {
+                      "key": "date",
+                      "value": "2026-05-13",
+                      "type": "text"
+                    },
+                    {
+                      "key": "attendance[{{demo_student_1}}]",
+                      "value": "present",
+                      "type": "text",
+                      "description": "ROLL-001"
+                    },
+                    {
+                      "key": "attendance[{{demo_student_2}}]",
+                      "value": "absent",
+                      "type": "text",
+                      "description": "ROLL-002"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/attendance/student-mark",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "student-mark"
+                  ]
+                },
+                "description": "Marks attendance for demo students ROLL-001 and ROLL-002 (user ids from AttendanceDemoSeeder)."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Single Student Performance",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-APP-KEY",
+                    "value": "{{api_key}}"
+                  },
+                  {
+                    "key": "X-DEVICE-ID",
+                    "value": "{{device_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/attendance/student-performance/{{demo_student_1}}?semester_id={{semester_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "student-performance",
+                    "{{demo_student_1}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "semester_id",
+                      "value": "{{semester_id}}",
+                      "description": "Required"
+                    },
+                    {
+                      "key": "session_id",
+                      "value": "{{session_id}}",
+                      "disabled": true
+                    },
+                    {
+                      "key": "course_id",
+                      "value": "{{course_id}}",
+                      "disabled": true
+                    },
+                    {
+                      "key": "section_id",
+                      "value": "{{section_id}}",
+                      "disabled": true
+                    },
+                    {
+                      "key": "subject_id",
+                      "value": "{{subject_id}}",
+                      "disabled": true
+                    },
+                    {
+                      "key": "month",
+                      "value": "9",
+                      "description": "1-12",
+                      "disabled": true
+                    },
+                    {
+                      "key": "year",
+                      "value": "2026",
+                      "disabled": true
+                    },
+                    {
+                      "key": "from_date",
+                      "value": "2026-09-01",
+                      "disabled": true
+                    },
+                    {
+                      "key": "to_date",
+                      "value": "2026-09-30",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Staff or faculty only. One student's subject-wise list plus overall percentage for the selected semester. summary and subject_wise include leave_classes. A record status is leave when that class was absent on an approved leave date. Percentage is present / (present + absent). Leave is outside that total."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Faculty Attendance Summary",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-APP-KEY",
+                    "value": "{{api_key}}"
+                  },
+                  {
+                    "key": "X-DEVICE-ID",
+                    "value": "{{device_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/attendance/faculty-attendance-summary?date=2026-05-12",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "faculty-attendance-summary"
+                  ],
+                  "query": [
+                    {
+                      "key": "date",
+                      "value": "2026-05-12"
+                    }
+                  ]
+                },
+                "description": "Staff or faculty only. Each class row includes present_count, absent_count, and leave_count. absent_count does not include students who are absent or unmarked on an approved leave. Those students are in leave_count. Present stays present."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Faculty Attendance Summary Students List",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-APP-KEY",
+                    "value": "{{api_key}}"
+                  },
+                  {
+                    "key": "X-DEVICE-ID",
+                    "value": "{{device_id}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "date",
+                      "value": "2026-05-12",
+                      "type": "text"
+                    },
+                    {
+                      "key": "session_id",
+                      "value": "3",
+                      "type": "text"
+                    },
+                    {
+                      "key": "course_id",
+                      "value": "1",
+                      "type": "text"
+                    },
+                    {
+                      "key": "semester_id",
+                      "value": "6",
+                      "type": "text"
+                    },
+                    {
+                      "key": "section_id",
+                      "value": "1",
+                      "type": "text"
+                    },
+                    {
+                      "key": "subject_id",
+                      "value": "2",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/attendance/faculty-attendance-summary/students",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "faculty-attendance-summary",
+                    "students"
+                  ]
+                },
+                "description": "Staff or faculty only. Each student status is present, absent, or leave. Present stays present. Absent, or no class mark, on an approved leave date is leave. A normal absent day stays absent."
+              },
+              "response": []
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Students List For Attendance",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "X-APP-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "X-DEVICE-ID",
-                "value": "{{device_id}}"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "batch_id",
-                  "value": "{{batch_id}}",
-                  "type": "text",
-                  "description": "Batch 2024-27 (id from seeder)"
-                },
-                {
-                  "key": "session_id",
-                  "value": "{{session_id}}",
-                  "type": "text",
-                  "description": "Session 2024-25 under batch"
-                },
-                {
-                  "key": "course_id",
-                  "value": "{{course_id}}",
-                  "type": "text",
-                  "description": "LLB3"
-                },
-                {
-                  "key": "semester_id",
-                  "value": "{{semester_id}}",
-                  "type": "text",
-                  "description": "Semester I"
-                },
-                {
-                  "key": "section_id",
-                  "value": "{{section_id}}",
-                  "type": "text",
-                  "description": "Section A"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{base_url}}/attendance/students",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "students"
-              ]
-            },
-            "description": "Demo seeder values: LLB3 course, batch 2024-27, session 2024-25, Semester I, Section A (students ROLL-001..005)."
-          },
-          "response": []
-        },
-        {
-          "name": "Mark Student Attendance",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "X-APP-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "X-DEVICE-ID",
-                "value": "{{device_id}}"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "batch_id",
-                  "value": "{{batch_id}}",
-                  "type": "text",
-                  "description": "Batch 2024-27"
-                },
-                {
-                  "key": "session_id",
-                  "value": "{{session_id}}",
-                  "type": "text",
-                  "description": "Session 2024-25"
-                },
-                {
-                  "key": "course_id",
-                  "value": "{{course_id}}",
-                  "type": "text",
-                  "description": "LLB3"
-                },
-                {
-                  "key": "semester_id",
-                  "value": "{{semester_id}}",
-                  "type": "text",
-                  "description": "Semester I"
-                },
-                {
-                  "key": "section_id",
-                  "value": "{{section_id}}",
-                  "type": "text",
-                  "description": "Section A"
-                },
-                {
-                  "key": "subject_id",
-                  "value": "{{subject_id}}",
-                  "type": "text",
-                  "description": "LLB101 Jurisprudence"
-                },
-                {
-                  "key": "date",
-                  "value": "2026-05-13",
-                  "type": "text"
-                },
-                {
-                  "key": "attendance[{{demo_student_1}}]",
-                  "value": "present",
-                  "type": "text",
-                  "description": "ROLL-001"
-                },
-                {
-                  "key": "attendance[{{demo_student_2}}]",
-                  "value": "absent",
-                  "type": "text",
-                  "description": "ROLL-002"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{base_url}}/attendance/student-mark",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "student-mark"
-              ]
-            },
-            "description": "Marks attendance for demo students ROLL-001 and ROLL-002 (user ids from AttendanceDemoSeeder)."
-          },
-          "response": []
-        },
-        {
-          "name": "Get Single Student Performance",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "X-APP-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "X-DEVICE-ID",
-                "value": "{{device_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/attendance/student-performance/{{demo_student_1}}?semester_id={{semester_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "student-performance",
-                "{{demo_student_1}}"
-              ],
-              "query": [
-                {
-                  "key": "semester_id",
-                  "value": "{{semester_id}}",
-                  "description": "Required"
-                },
-                {
-                  "key": "session_id",
-                  "value": "{{session_id}}",
-                  "disabled": true
-                },
-                {
-                  "key": "course_id",
-                  "value": "{{course_id}}",
-                  "disabled": true
-                },
-                {
-                  "key": "section_id",
-                  "value": "{{section_id}}",
-                  "disabled": true
-                },
-                {
-                  "key": "subject_id",
-                  "value": "{{subject_id}}",
-                  "disabled": true
-                },
-                {
-                  "key": "month",
-                  "value": "9",
-                  "description": "1-12",
-                  "disabled": true
-                },
-                {
-                  "key": "year",
-                  "value": "2026",
-                  "disabled": true
-                },
-                {
-                  "key": "from_date",
-                  "value": "2026-09-01",
-                  "disabled": true
-                },
-                {
-                  "key": "to_date",
-                  "value": "2026-09-30",
-                  "disabled": true
-                }
-              ]
-            },
-            "description": "Staff or faculty only. One student's subject-wise list plus overall percentage for the selected semester."
-          },
-          "response": []
-        },
-        {
-          "name": "Get Student Overall Attendance (Monthly)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "X-APP-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "X-DEVICE-ID",
-                "value": "{{device_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/attendance/student/overall?filter=month&month=2026-09",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "student",
-                "overall"
-              ],
-              "query": [
-                {
-                  "key": "filter",
-                  "value": "month",
-                  "description": "month or semester. Default is month (current month)."
-                },
-                {
-                  "key": "month",
-                  "value": "2026-09",
-                  "description": "YYYY-MM. Used when filter=month. Omit for the current month."
-                },
-                {
-                  "key": "semester_id",
-                  "value": "{{semester_id}}",
-                  "description": "Used when filter=semester. Omit to use the student's profile semester.",
-                  "disabled": true
-                }
-              ]
-            },
-            "description": "Student role only. Overall Attendance % for one month, all subjects. Same formula as the admin monthly report: present / total classes. Login with Student Login first."
-          },
-          "response": []
-        },
-        {
-          "name": "Get Student Overall Attendance (Semester)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "X-APP-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "X-DEVICE-ID",
-                "value": "{{device_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/attendance/student/overall?filter=semester&semester_id={{semester_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "student",
-                "overall"
-              ],
-              "query": [
-                {
-                  "key": "filter",
-                  "value": "semester",
-                  "description": "Whole semester, all months."
-                },
-                {
-                  "key": "semester_id",
-                  "value": "{{semester_id}}",
-                  "description": "Optional. Omit to use the logged-in student's current semester."
-                }
-              ]
-            },
-            "description": "Student role only. Overall Attendance % for one semester. Returns semester_id, semester_name, total_classes, attended, absent, and percentage."
-          },
-          "response": []
-        },
-        {
-          "name": "Get Self Student Attendance (Subject Wise, Monthly)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "X-APP-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "X-DEVICE-ID",
-                "value": "{{device_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/attendance/student?filter=month&month=2026-09",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "student"
-              ],
-              "query": [
-                {
-                  "key": "filter",
-                  "value": "month",
-                  "description": "month or semester. Omit filter, month, and semester_id to get all records."
-                },
-                {
-                  "key": "month",
-                  "value": "2026-09",
-                  "description": "YYYY-MM. Used when filter=month."
-                },
-                {
-                  "key": "search",
-                  "value": "",
-                  "description": "Optional subject name search.",
-                  "disabled": true
-                }
-              ]
-            },
-            "description": "Student role only. Subject-wise attendance for one month: total_classes, attended_classes, percentage, and date records."
-          },
-          "response": []
-        },
-        {
-          "name": "Get Self Student Attendance (Subject Wise, Semester)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "X-APP-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "X-DEVICE-ID",
-                "value": "{{device_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/attendance/student?filter=semester&semester_id={{semester_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "student"
-              ],
-              "query": [
-                {
-                  "key": "filter",
-                  "value": "semester"
-                },
-                {
-                  "key": "semester_id",
-                  "value": "{{semester_id}}",
-                  "description": "Optional. Omit to use the logged-in student's current semester."
-                },
-                {
-                  "key": "search",
-                  "value": "",
-                  "description": "Optional subject name search.",
-                  "disabled": true
-                }
-              ]
-            },
-            "description": "Student role only. Subject-wise attendance for one semester."
-          },
-          "response": []
-        },
-        {
-          "name": "Get Faculty Attendance Summary",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "X-APP-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "X-DEVICE-ID",
-                "value": "{{device_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/attendance/faculty-attendance-summary?date=2026-05-12",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "faculty-attendance-summary"
-              ],
-              "query": [
-                {
-                  "key": "date",
-                  "value": "2026-05-12"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Faculty Attendance Summary Students List",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "X-APP-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "X-DEVICE-ID",
-                "value": "{{device_id}}"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "date",
-                  "value": "2026-05-12",
-                  "type": "text"
-                },
-                {
-                  "key": "session_id",
-                  "value": "3",
-                  "type": "text"
-                },
-                {
-                  "key": "course_id",
-                  "value": "1",
-                  "type": "text"
-                },
-                {
-                  "key": "semester_id",
-                  "value": "6",
-                  "type": "text"
-                },
-                {
-                  "key": "section_id",
-                  "value": "1",
-                  "type": "text"
-                },
-                {
-                  "key": "subject_id",
-                  "value": "2",
-                  "type": "text"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{base_url}}/attendance/faculty-attendance-summary/students",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "faculty-attendance-summary",
-                "students"
-              ]
-            }
-          },
-          "response": []
+          ]
         }
       ]
     },

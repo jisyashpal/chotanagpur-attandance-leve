@@ -62,7 +62,7 @@
                         </div>
                     </div>
                     <h2 class="fw-bold mb-2 text-success">{{ $presentDays }}</h2>
-                    <span class="text-muted small">On-time & Late days</span>
+                    <span class="text-muted small">Check-in counts even without check-out</span>
                 </div>
             </div>
         </div>
@@ -71,13 +71,13 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-3 p-md-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-muted fw-medium small">Late Incomings</span>
-                        <div class="bg-danger bg-opacity-10 p-2 rounded text-danger">
-                            <i class="fas fa-clock fa-lg"></i>
+                        <span class="text-muted fw-medium small">Approved Leave</span>
+                        <div class="bg-info bg-opacity-10 p-2 rounded text-info">
+                            <i class="fas fa-umbrella-beach fa-lg"></i>
                         </div>
                     </div>
-                    <h2 class="fw-bold mb-2 text-danger">{{ $lateDays }}</h2>
-                    <span class="text-muted small">Arrived after hours</span>
+                    <h2 class="fw-bold mb-2 text-info">{{ $leaveDays }}</h2>
+                    <span class="text-muted small">Not counted as absent</span>
                 </div>
             </div>
         </div>
@@ -133,13 +133,13 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            @if(strtolower($attendance->status) === 'present')
+                                            @if(($attendance->display_status ?? $attendance->status) === 'present')
                                                 <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-bold">
                                                     <i class="fas fa-check-circle me-1"></i> Present
                                                 </span>
-                                            @elseif(strtolower($attendance->status) === 'late')
-                                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill fw-bold">
-                                                    <i class="fas fa-exclamation-circle me-1"></i> Late
+                                            @elseif(($attendance->display_status ?? $attendance->status) === 'leave')
+                                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2 rounded-pill fw-bold">
+                                                    <i class="fas fa-umbrella-beach me-1"></i> Leave
                                                 </span>
                                             @else
                                                 <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill fw-bold">

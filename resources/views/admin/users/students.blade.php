@@ -171,6 +171,10 @@
                                             <span
                                                 class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1">Pending</span>
                                         @endif
+                                        @if(! $user->is_active)
+                                            <span
+                                                class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">Blocked</span>
+                                        @endif
                                     </td>
                                     <td class="text-end pe-4 text-nowrap">
                                         <a href="{{ route('admin.attendance.monthly', ['student_id' => $user->id]) }}"
@@ -185,6 +189,17 @@
                                             class="btn btn-sm btn-light text-primary me-1" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        <form action="{{ route('admin.users.toggle_active', $user->id) }}" method="POST"
+                                            class="d-inline"
+                                            onsubmit="return confirm('{{ $user->is_active ? 'Block this student? They will be logged out immediately.' : 'Unblock this student?' }}')">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit"
+                                                class="btn btn-sm btn-light {{ $user->is_active ? 'text-danger' : 'text-success' }} me-1"
+                                                title="{{ $user->is_active ? 'Block' : 'Unblock' }}">
+                                                <i class="fas {{ $user->is_active ? 'fa-ban' : 'fa-unlock' }}"></i>
+                                            </button>
+                                        </form>
                                         <form action="{{ route('admin.users.students.destroy', $user->id) }}" method="POST"
                                             class="d-inline"
                                             onsubmit="return confirm('Are you sure you want to delete this student?')">

@@ -110,6 +110,9 @@
                                         @else
                                             <span class="badge bg-secondary-subtle text-secondary px-2">Incomplete</span>
                                         @endif
+                                        @if(! $user->is_active)
+                                            <span class="badge bg-danger-subtle text-danger px-2">Blocked</span>
+                                        @endif
                                     </td>
                                     <td class="text-end pe-4">
                                         <div class="btn-group">
@@ -125,6 +128,17 @@
                                                 class="btn btn-sm btn-light text-primary me-2" title="Edit Profile">
                                                 <i class="fas fa-edit"></i>
                                             </a>
+                                            <form action="{{ route('admin.users.toggle_active', $user->id) }}"
+                                                method="POST" class="d-inline"
+                                                onsubmit="return confirm('{{ $user->is_active ? 'Block this user? They will be logged out immediately.' : 'Unblock this user?' }}')">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit"
+                                                    class="btn btn-sm btn-light {{ $user->is_active ? 'text-danger' : 'text-success' }} me-2"
+                                                    title="{{ $user->is_active ? 'Block' : 'Unblock' }}">
+                                                    <i class="fas {{ $user->is_active ? 'fa-ban' : 'fa-unlock' }}"></i>
+                                                </button>
+                                            </form>
                                             <form action="{{ route('admin.users.staff_faculty.destroy', $user->id) }}"
                                                 method="POST" class="d-inline"
                                                 onsubmit="return confirm('Are you sure you want to delete this user?')">

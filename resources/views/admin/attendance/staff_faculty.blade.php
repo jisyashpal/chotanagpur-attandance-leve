@@ -148,9 +148,9 @@
                             </div>
                         </div>
                         <div class="col-3">
-                            <div class="p-3 bg-warning-subtle rounded-3 text-center h-100 shadow-sm border border-warning-subtle">
-                                <span class="text-warning small d-block mb-1 text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px; color: #856404 !important;">Late</span>
-                                <h4 class="fw-bold mb-0 text-warning text-opacity-75" style="color: #856404 !important;">{{ $stats['late'] }}</h4>
+                            <div class="p-3 bg-info-subtle rounded-3 text-center h-100 shadow-sm border border-info-subtle">
+                                <span class="text-info small d-block mb-1 text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">Leave</span>
+                                <h4 class="fw-bold mb-0 text-info">{{ $stats['leave'] }}</h4>
                             </div>
                         </div>
                         <div class="col-3">
@@ -164,7 +164,7 @@
                     <!-- Progress Bar -->
                     <div class="mt-4">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small text-muted fw-semibold">Attendance Rate (Present + Late)</span>
+                            <span class="small text-muted fw-semibold">Attendance Rate (Present / Present + Absent)</span>
                             <span class="badge {{ $stats['percentage'] >= 75 ? 'bg-success' : ($stats['percentage'] >= 50 ? 'bg-warning text-dark' : 'bg-danger') }} fw-bold px-2 py-1">
                                 {{ $stats['percentage'] }}%
                             </span>
@@ -252,10 +252,10 @@
                                 @endif
                             </td>
                             <td>
-                                @if($attendance->status === 'present')
+                                @if(($attendance->display_status ?? $attendance->status) === 'present')
                                     <span class="badge bg-success text-white px-3">Present</span>
-                                @elseif($attendance->status === 'late')
-                                    <span class="badge bg-warning text-dark px-3">Late</span>
+                                @elseif(($attendance->display_status ?? $attendance->status) === 'leave')
+                                    <span class="badge bg-info text-white px-3">Leave</span>
                                 @else
                                     <span class="badge bg-secondary text-white px-3">Absent</span>
                                 @endif

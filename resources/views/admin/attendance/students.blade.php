@@ -257,22 +257,28 @@
 
                 <div class="col-lg-8 ps-lg-4">
                     <div class="row g-3">
-                        <div class="col-4">
+                        <div class="col-6 col-xl-3">
                             <div class="p-3 bg-light rounded-3 text-center h-100 shadow-sm border border-light">
                                 <span class="text-muted small d-block mb-1 text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Total Classes</span>
                                 <h4 class="fw-bold mb-0 text-dark">{{ $stats['total'] }}</h4>
                             </div>
                         </div>
-                        <div class="col-4">
+                        <div class="col-6 col-xl-3">
                             <div class="p-3 bg-success-subtle rounded-3 text-center h-100 shadow-sm border border-success-subtle">
                                 <span class="text-success small d-block mb-1 text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Attended</span>
                                 <h4 class="fw-bold mb-0 text-success text-opacity-75">{{ $stats['present'] }}</h4>
                             </div>
                         </div>
-                        <div class="col-4">
+                        <div class="col-6 col-xl-3">
                             <div class="p-3 bg-danger-subtle rounded-3 text-center h-100 shadow-sm border border-danger-subtle">
                                 <span class="text-danger small d-block mb-1 text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Absent</span>
                                 <h4 class="fw-bold mb-0 text-danger text-opacity-75">{{ $stats['absent'] }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-6 col-xl-3">
+                            <div class="p-3 bg-info-subtle rounded-3 text-center h-100 shadow-sm border border-info-subtle">
+                                <span class="text-info small d-block mb-1 text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Leave</span>
+                                <h4 class="fw-bold mb-0 text-info">{{ $stats['leave'] ?? 0 }}</h4>
                             </div>
                         </div>
                     </div>

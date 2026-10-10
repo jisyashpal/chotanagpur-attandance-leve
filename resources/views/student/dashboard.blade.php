@@ -109,7 +109,7 @@
                         </div>
                     </div>
                     <h2 class="fw-bold mb-2 text-danger">{{ $absentClasses }}</h2>
-                    <span class="text-muted small">Lectures absent</span>
+                    <span class="text-muted small">{{ $leaveClasses }} on approved leave</span>
                 </div>
             </div>
         </div>
@@ -133,6 +133,7 @@
                                     <th class="text-center">Total Lectures</th>
                                     <th class="text-center">Attended</th>
                                     <th class="text-center">Missed</th>
+                                    <th class="text-center">Leave</th>
                                     <th class="text-center" style="width: 25%;">Attendance Percentage</th>
                                 </tr>
                             </thead>
@@ -144,6 +145,7 @@
                                         <td class="text-center">{{ $subject['total'] }}</td>
                                         <td class="text-center text-success fw-medium">{{ $subject['present'] }}</td>
                                         <td class="text-center text-danger fw-medium">{{ $subject['absent'] }}</td>
+                                        <td class="text-center text-info fw-medium">{{ $subject['leave'] }}</td>
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="progress flex-grow-1 me-3" style="height: 8px;">
@@ -162,7 +164,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center py-4 text-muted">
+                                        <td colspan="7" class="text-center py-4 text-muted">
                                             <i class="fas fa-info-circle me-1"></i> No attendance record or subjects found for this semester.
                                         </td>
                                     </tr>

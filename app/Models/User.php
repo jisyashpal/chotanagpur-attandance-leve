@@ -28,6 +28,7 @@ class User extends Authenticatable
         'password',
         'role',
         'is_profile_complete',
+        'is_active',
         'profile_photo',
     ];
 
@@ -52,6 +53,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_profile_complete' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 

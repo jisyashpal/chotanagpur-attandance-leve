@@ -182,7 +182,9 @@ test('staff faculty attendance export contains staff and faculty but not student
         ->toContain('FAC-EXP-001')
         ->toContain('STF-EXP-001')
         ->not->toContain('Export Student User')
-        ->not->toContain('export.student@example.com');
+        ->not->toContain('export.student@example.com')
+        ->not->toContain('late_days')
+        ->toContain('approved_leave_days');
 });
 
 test('student attendance export contains students but not staff or faculty', function () {

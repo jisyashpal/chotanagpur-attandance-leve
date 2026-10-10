@@ -36,7 +36,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
+Route::middleware(['auth', 'active', 'verified', 'profile.complete'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::middleware('role:student')->prefix('student')->name('student.')->group(function () {
@@ -64,7 +64,7 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     });
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
     
     Route::middleware('role:student')->group(function () {

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ActivityLog;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
@@ -51,6 +52,11 @@ class AuditLogger
         }
 
         $actor = Auth::user();
+
+        // Login happens before the token is attached, so Auth::user() is still empty.
+        if (! $actor && $action === 'login' && $subject instanceof User) {
+            $actor = $subject;
+        }
 
         $properties = array_filter([
             'old' => $old,

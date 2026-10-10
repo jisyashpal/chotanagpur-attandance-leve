@@ -58,10 +58,13 @@ test('faculty can access dashboard and view attendance history', function () {
         'attendances',
         'totalDays',
         'presentDays',
-        'lateDays',
+        'leaveDays',
         'absentDays',
         'attendancePercentage'
     ]);
+    $response->assertViewHas('presentDays', 1);
+    $response->assertViewHas('leaveDays', 0);
+    $response->assertViewHas('absentDays', 0);
 });
 
 test('staff can access dashboard and view attendance history', function () {
@@ -112,8 +115,11 @@ test('staff can access dashboard and view attendance history', function () {
         'attendances',
         'totalDays',
         'presentDays',
-        'lateDays',
+        'leaveDays',
         'absentDays',
         'attendancePercentage'
     ]);
+    $response->assertViewHas('presentDays', 1);
+    $response->assertViewHas('leaveDays', 0);
+    $response->assertViewHas('attendancePercentage', 100);
 });
